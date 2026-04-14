@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Murderer</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0f0f0f; --bg2: #1a1a1a; --bg3: #242424; --bg4: #2e2e2e;
+  --text: #e0e0e0; --text2: #999; --accent: #e63946; --accent2: #ff6b6b;
+  --green: #2ecc71; --yellow: #f1c40f; --orange: #e67e22; --blue: #3498db;
+  --purple: #9b59b6; --red: #e74c3c;
+  --radius: 8px; --shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
+
+/* Sidebar */
+.sidebar { width: 240px; background: var(--bg2); border-right: 1px solid var(--bg3); display: flex; flex-direction: column; flex-shrink: 0; }
+.sidebar-header { padding: 20px 16px; border-bottom: 1px solid var(--bg3); }
+.sidebar-header h1 { font-size: 20px; color: var(--accent); letter-spacing: 1px; }
+.sidebar-header p { font-size: 11px; color: var(--text2); margin-top: 4px; }
+.nav-items { flex: 1; padding: 12px 0; overflow-y: auto; }
+.nav-item { padding: 10px 16px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text2); transition: all 0.15s; border-left: 3px solid transparent; }
+.nav-item:hover { background: var(--bg3); color: var(--text); }
+.nav-item.active { background: var(--bg3); color: var(--accent2); border-left-color: var(--accent); }
+.nav-item .count { margin-left: auto; background: var(--bg4); padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+.nav-item .count.alert { background: var(--accent); color: white; }
+.sidebar-footer { padding: 12px 16px; border-top: 1px solid var(--bg3); font-size: 11px; color: var(--text2); }
+
+/* Main content */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; background: var(--bg2); border-bottom: 1px solid var(--bg3); }
+.topbar h2 { font-size: 16px; font-weight: 600; }
+.topbar-actions { display: flex; gap: 8px; }
+.btn { padding: 7px 14px; border: none; border-radius: var(--radius); cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.15s; }
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: var(--accent2); }
+.btn-secondary { background: var(--bg4); color: var(--text); border: 1px solid var(--bg4); }
+.btn-secondary:hover { border-color: var(--text2); }
+.btn-danger { background: transparent; color: var(--red); border: 1px solid var(--red); }
+.btn-danger:hover { background: var(--red); color: white; }
+.btn-small { padding: 4px 10px; font-size: 11px; }
+
+/* Dashboard */
+.dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; padding: 20px 24px; }
+.stat-card { background: var(--bg2); border-radius: var(--radius); padding: 14px; text-align: center; border: 1px solid var(--bg3); }
+.stat-card .number { font-size: 28px; font-weight: 700; }
+.stat-card .label { font-size: 11px; color: var(--text2); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-new .number { color: var(--blue); }
+.stat-applied .number { color: var(--yellow); }
+.stat-followup .number { color: var(--orange); }
+.stat-interview .number { color: var(--purple); }
+.stat-offered .number { color: var(--green); }
+.stat-rejected .number { color: var(--red); }
+
+/* Content area */
+.content { flex: 1; overflow-y: auto; padding: 0 24px 24px; }
+.search-bar { padding: 12px 0; display: flex; gap: 8px; }
+.search-bar input { flex: 1; padding: 8px 12px; background: var(--bg3); border: 1px solid var(--bg4); border-radius: var(--radius); color: var(--text); font-size: 13px; outline: none; }
+.search-bar input:focus { border-color: var(--accent); }
+
+/* Job cards */
+.job-card { background: var(--bg2); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; border: 1px solid var(--bg3); transition: all 0.15s; cursor: pointer; }
+.job-card:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: var(--shadow); }
+.job-card.reminder { border-left: 4px solid var(--orange); }
+.job-card.urgent-reminder { border-left: 4px solid var(--red); animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.85; } }
+
+.job-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.job-title { font-size: 15px; font-weight: 600; }
+.job-company { font-size: 13px; color: var(--text2); }
+.job-meta { display: flex; gap: 12px; font-size: 11px; color: var(--text2); margin: 6px 0; flex-wrap: wrap; }
+.job-meta span { display: flex; align-items: center; gap: 4px; }
+
+.status-badge { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.status-new { background: rgba(52,152,219,0.15); color: var(--blue); }
+.status-applied { background: rgba(241,196,15,0.15); color: var(--yellow); }
+.status-interviewing { background: rgba(155,89,182,0.15); color: var(--purple); }
+.status-offered { background: rgba(46,204,113,0.15); color: var(--green); }
+.status-rejected { background: rgba(231,76,60,0.15); color: var(--red); }
+.status-withdrawn { background: rgba(153,153,153,0.15); color: var(--text2); }
+
+.checklist { display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
+.check-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+.check-item input[type="checkbox"] { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
+.check-item.checked { color: var(--green); }
+.followup-alert { background: rgba(230,126,34,0.1); border: 1px solid var(--orange); border-radius: var(--radius); padding: 6px 10px; font-size: 11px; color: var(--orange); margin-top: 8px; }
+.followup-alert.urgent { background: rgba(231,76,60,0.1); border-color: var(--red); color: var(--red); }
+
+/* Modal */
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 100; }
+.modal-overlay.show { display: flex; }
+.modal { background: var(--bg2); border-radius: 12px; width: 620px; max-height: 85vh; overflow-y: auto; border: 1px solid var(--bg3); }
+.modal-header { padding: 16px 20px; border-bottom: 1px solid var(--bg3); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--bg2); z-index: 1; }
+.modal-header h3 { font-size: 16px; }
+.modal-close { background: none; border: none; color: var(--text2); font-size: 20px; cursor: pointer; padding: 4px 8px; }
+.modal-close:hover { color: var(--text); }
+.modal-body { padding: 20px; }
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 12px; background: var(--bg3); border: 1px solid var(--bg4); border-radius: var(--radius); color: var(--text); font-size: 13px; font-family: inherit; outline: none; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); }
+.form-group textarea { min-height: 80px; resize: vertical; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-checks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+.form-checks label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); cursor: pointer; text-transform: none; letter-spacing: 0; font-weight: normal; }
+.form-checks input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
+.modal-footer { padding: 14px 20px; border-top: 1px solid var(--bg3); display: flex; justify-content: space-between; gap: 8px; }
+.modal-footer .btn-group { display: flex; gap: 8px; }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text2); }
+.empty-state h3 { font-size: 18px; margin-bottom: 8px; color: var(--text); }
+
+/* Settings view */
+.settings-form { max-width: 500px; }
+.settings-form .form-group { margin-bottom: 18px; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text2); }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h1>JOB MURDERER</h1>
+    <p>Jeffery Wright | Job Tracker</p>
+  </div>
+  <div class="nav-items">
+    <div class="nav-item active" data-view="dashboard" data-filter="all">All Jobs <span class="count" id="count-all">0</span></div>
+    <div class="nav-item" data-view="list" data-filter="new">New / Recommended <span class="count" id="count-new">0</span></div>
+    <div class="nav-item" data-view="list" data-filter="ready">Ready to Apply <span class="count" id="count-ready">0</span></div>
+    <div class="nav-item" data-view="list" data-filter="applied">Applied <span class="count" id="count-applied">0</span></div>
+    <div class="nav-item" data-view="list" data-filter="followup">Follow-Up Due <span class="count alert" id="count-followup">0</span></div>
+    <div class="nav-item" data-view="list" data-filter="interviewing">Interviewing <span class="count" id="count-interview">0</span></div>
+    <div class="nav-item" data-view="list" data-filter="offered">Offered <span class="count" id="count-offered">0</span></div>
+    <div class="nav-item" data-view="list" data-filter="responded">Employer Responded <span class="count" id="count-responded">0</span></div>
+    <div class="nav-item" data-view="list" data-filter="rejected">Rejected / Closed <span class="count" id="count-rejected">0</span></div>
+    <div class="nav-item" data-view="settings" data-filter="">Settings <span class="count"></span></div>
+  </div>
+  <div class="sidebar-footer">
+    <div id="lastUpdate">Last sync: never</div>
+    <div id="bccInfo" style="margin-top:4px;"></div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <h2 id="viewTitle">Dashboard</h2>
+    <div class="topbar-actions">
+      <button class="btn btn-secondary" onclick="refreshData()">Refresh</button>
+      <button class="btn btn-primary" onclick="openAddModal()">+ Add Job</button>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboardView">
+    <div class="dashboard">
+      <div class="stat-card stat-new"><div class="number" id="dash-new">0</div><div class="label">New</div></div>
+      <div class="stat-card stat-applied"><div class="number" id="dash-ready">0</div><div class="label">Ready</div></div>
+      <div class="stat-card stat-applied"><div class="number" id="dash-applied">0</div><div class="label">Applied</div></div>
+      <div class="stat-card stat-followup"><div class="number" id="dash-followup">0</div><div class="label">Follow-Up</div></div>
+      <div class="stat-card stat-interview"><div class="number" id="dash-interview">0</div><div class="label">Interview</div></div>
+      <div class="stat-card stat-offered"><div class="number" id="dash-offered">0</div><div class="label">Offered</div></div>
+      <div class="stat-card stat-rejected"><div class="number" id="dash-rejected">0</div><div class="label">Closed</div></div>
+    </div>
+    <div class="content" id="dashContent"></div>
+  </div>
+
+  <!-- List view -->
+  <div id="listView" style="display:none;" class="content">
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Search jobs..." oninput="renderJobs()">
+    </div>
+    <div id="jobList"></div>
+  </div>
+
+  <!-- Settings view -->
+  <div id="settingsView" style="display:none;" class="content" style="padding-top:20px;">
+    <div class="settings-form" style="padding-top:20px;">
+      <div class="form-group">
+        <label>BCC Email (for auto-tracking submissions)</label>
+        <input type="email" id="settingBccEmail">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Follow-Up Min Days</label>
+          <input type="number" id="settingFollowMin" min="1" max="30">
+        </div>
+        <div class="form-group">
+          <label>Follow-Up Max Days</label>
+          <input type="number" id="settingFollowMax" min="1" max="30">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Database Path (for cron job integration)</label>
+        <input type="text" id="settingDbPath" readonly style="opacity:0.6;">
+      </div>
+      <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="jobModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">Add New Job</h3>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editJobId">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Company</label>
+          <input type="text" id="fCompany" placeholder="e.g., Morgan & Morgan">
+        </div>
+        <div class="form-group">
+          <label>Role / Title</label>
+          <input type="text" id="fTitle" placeholder="e.g., Associate Attorney">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Status</label>
+          <select id="fStatus">
+            <option value="new">New / Recommended</option>
+            <option value="ready">Ready to Apply</option>
+            <option value="applied">Applied</option>
+            <option value="interviewing">Interviewing</option>
+            <option value="offered">Offered</option>
+            <option value="rejected">Rejected</option>
+            <option value="withdrawn">Withdrawn</option>
+            <option value="closed">Closed / Expired</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Salary</label>
+          <input type="text" id="fSalary" placeholder="e.g., $80K-$100K">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Location</label>
+          <input type="text" id="fLocation" placeholder="e.g., Remote, Orlando, FL">
+        </div>
+        <div class="form-group">
+          <label>Source</label>
+          <input type="text" id="fSource" placeholder="e.g., LinkedIn, cron-job, referral">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Apply Link / URL</label>
+        <input type="url" id="fUrl" placeholder="https://...">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date Applied</label>
+          <input type="date" id="fDateApplied">
+        </div>
+        <div class="form-group">
+          <label>Follow-Up Due</label>
+          <input type="date" id="fFollowUpDue">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Documents Submitted</label>
+        <div class="form-checks">
+          <label><input type="checkbox" id="fResumeSubmitted"> Resume</label>
+          <label><input type="checkbox" id="fCoverLetterSubmitted"> Cover Letter</label>
+          <label><input type="checkbox" id="fEmailSent"> Application Email</label>
+          <label><input type="checkbox" id="fWritingSample"> Writing Sample</label>
+          <label><input type="checkbox" id="fFollowUpSent"> Follow-Up Sent</label>
+          <label><input type="checkbox" id="fResponseReceived"> Response Received</label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Employer Details / Contact</label>
+        <textarea id="fEmployerDetails" placeholder="Contact name, phone, email, notes about the firm..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea id="fNotes" placeholder="Application notes, next steps, interview prep..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Response Notes</label>
+        <textarea id="fResponseNotes" placeholder="What did they say? Interview scheduled? Rejection reason?"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div>
+        <button class="btn btn-danger btn-small" id="deleteBtn" onclick="deleteJob()" style="display:none;">Delete</button>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveJob()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let allJobs = [];
+let currentFilter = 'all';
+let currentView = 'dashboard';
+let config = {};
+
+// ============================================================
+// INIT
+// ============================================================
+async function init() {
+  config = await window.api.getConfig();
+  document.getElementById('bccInfo').textContent = 'BCC: ' + (config.bccEmail || 'not set');
+  await refreshData();
+  setupNav();
+
+  // Check reminders on load
+  const reminders = await window.api.getReminders();
+  if (reminders.length > 0) {
+    const urgent = reminders.filter(r => r.urgent).length;
+    if (urgent > 0) {
+      window.api.notify('Job Murderer', urgent + ' job(s) need follow-up TODAY!');
+    }
+  }
+}
+
+async function refreshData() {
+  const db = await window.api.getAll();
+  allJobs = db.jobs || [];
+  document.getElementById('lastUpdate').textContent = 'Last sync: ' + new Date(db.lastUpdated).toLocaleString();
+  updateCounts();
+  render();
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function setupNav() {
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      item.classList.add('active');
+      currentView = item.dataset.view;
+      currentFilter = item.dataset.filter;
+      render();
+    });
+  });
+}
+
+function render() {
+  const title = document.getElementById('viewTitle');
+  document.getElementById('dashboardView').style.display = currentView === 'dashboard' ? '' : 'none';
+  document.getElementById('listView').style.display = currentView === 'list' ? '' : 'none';
+  document.getElementById('settingsView').style.display = currentView === 'settings' ? '' : 'none';
+
+  if (currentView === 'dashboard') {
+    title.textContent = 'Dashboard';
+    renderDashboard();
+  } else if (currentView === 'settings') {
+    title.textContent = 'Settings';
+    renderSettings();
+  } else {
+    const filterNames = {
+      new: 'New / Recommended', ready: 'Ready to Apply', applied: 'Applied',
+      followup: 'Follow-Up Due', interviewing: 'Interviewing', offered: 'Offered',
+      responded: 'Employer Responded', rejected: 'Rejected / Closed'
+    };
+    title.textContent = filterNames[currentFilter] || 'All Jobs';
+    renderJobs();
+  }
+}
+
+// ============================================================
+// COUNTS
+// ============================================================
+function updateCounts() {
+  const now = new Date();
+  let counts = { all: 0, new: 0, ready: 0, applied: 0, followup: 0, interview: 0, offered: 0, responded: 0, rejected: 0 };
+
+  allJobs.forEach(j => {
+    counts.all++;
+    if (j.status === 'new') counts.new++;
+    if (j.status === 'ready') counts.ready++;
+    if (j.status === 'applied') counts.applied++;
+    if (j.status === 'interviewing') counts.interview++;
+    if (j.status === 'offered') counts.offered++;
+    if (j.status === 'rejected' || j.status === 'withdrawn' || j.status === 'closed') counts.rejected++;
+    if (j.responseReceived) counts.responded++;
+
+    // Follow-up check
+    if (j.status === 'applied' && j.dateApplied && !j.followUpSent) {
+      const days = Math.floor((now - new Date(j.dateApplied)) / 86400000);
+      if (days >= (config.followUpDaysMin || 3)) counts.followup++;
+    }
+  });
+
+  document.getElementById('count-all').textContent = counts.all;
+  document.getElementById('count-new').textContent = counts.new;
+  document.getElementById('count-ready').textContent = counts.ready;
+  document.getElementById('count-applied').textContent = counts.applied;
+  document.getElementById('count-followup').textContent = counts.followup;
+  document.getElementById('count-interview').textContent = counts.interview;
+  document.getElementById('count-offered').textContent = counts.offered;
+  document.getElementById('count-responded').textContent = counts.responded;
+  document.getElementById('count-rejected').textContent = counts.rejected;
+
+  // Dashboard numbers
+  document.getElementById('dash-new').textContent = counts.new;
+  document.getElementById('dash-ready').textContent = counts.ready;
+  document.getElementById('dash-applied').textContent = counts.applied;
+  document.getElementById('dash-followup').textContent = counts.followup;
+  document.getElementById('dash-interview').textContent = counts.interview;
+  document.getElementById('dash-offered').textContent = counts.offered;
+  document.getElementById('dash-rejected').textContent = counts.rejected;
+}
+
+// ============================================================
+// RENDER JOBS
+// ============================================================
+function getFilteredJobs() {
+  const now = new Date();
+  const search = (document.getElementById('searchInput')?.value || '').toLowerCase();
+  let filtered = allJobs;
+
+  if (currentFilter === 'followup') {
+    filtered = filtered.filter(j => {
+      if (j.status !== 'applied' || !j.dateApplied || j.followUpSent) return false;
+      const days = Math.floor((now - new Date(j.dateApplied)) / 86400000);
+      return days >= (config.followUpDaysMin || 3);
+    });
+  } else if (currentFilter === 'responded') {
+    filtered = filtered.filter(j => j.responseReceived);
+  } else if (currentFilter === 'rejected') {
+    filtered = filtered.filter(j => ['rejected', 'withdrawn', 'closed'].includes(j.status));
+  } else if (currentFilter !== 'all') {
+    filtered = filtered.filter(j => j.status === currentFilter);
+  }
+
+  if (search) {
+    filtered = filtered.filter(j =>
+      (j.company || '').toLowerCase().includes(search) ||
+      (j.title || '').toLowerCase().includes(search) ||
+      (j.location || '').toLowerCase().includes(search) ||
+      (j.notes || '').toLowerCase().includes(search)
+    );
+  }
+
+  // Sort: follow-ups first (by urgency), then by dateAdded desc
+  filtered.sort((a, b) => {
+    const aDate = new Date(a.dateAdded || 0);
+    const bDate = new Date(b.dateAdded || 0);
+    return bDate - aDate;
+  });
+
+  return filtered;
+}
+
+function renderJobs() {
+  const list = document.getElementById('jobList');
+  const jobs = getFilteredJobs();
+
+  if (jobs.length === 0) {
+    list.innerHTML = '<div class="empty-state"><h3>No jobs here</h3><p>Jobs matching this filter will appear here.</p></div>';
+    return;
+  }
+
+  const now = new Date();
+  list.innerHTML = jobs.map(j => {
+    let followupInfo = '';
+    let cardClass = 'job-card';
+    if (j.status === 'applied' && j.dateApplied && !j.followUpSent) {
+      const days = Math.floor((now - new Date(j.dateApplied)) / 86400000);
+      if (days >= (config.followUpDaysMax || 7)) {
+        cardClass += ' urgent-reminder';
+        followupInfo = '<div class="followup-alert urgent">URGENT: ' + days + ' days since applied. Send follow-up NOW!</div>';
+      } else if (days >= (config.followUpDaysMin || 3)) {
+        cardClass += ' reminder';
+        followupInfo = '<div class="followup-alert">' + days + ' days since applied. Follow-up recommended.</div>';
+      }
+    }
+
+    const checks = [
+      { key: 'resumeSubmitted', label: 'Resume' },
+      { key: 'coverLetterSubmitted', label: 'Cover Letter' },
+      { key: 'emailSent', label: 'Email' },
+      { key: 'writingSample', label: 'Writing Sample' },
+      { key: 'followUpSent', label: 'Follow-Up' },
+      { key: 'responseReceived', label: 'Response' },
+    ];
+
+    const checkHtml = checks.map(c => {
+      const checked = j[c.key] ? 'checked' : '';
+      const cls = j[c.key] ? 'check-item checked' : 'check-item';
+      return '<label class="' + cls + '"><input type="checkbox" ' + checked + ' onclick="toggleCheck(event, \'' + j.id + '\', \'' + c.key + '\')">' + c.label + '</label>';
+    }).join('');
+
+    return '<div class="' + cardClass + '" onclick="openEditModal(\'' + j.id + '\')">' +
+      '<div class="job-header">' +
+        '<div><div class="job-title">' + esc(j.title || 'Untitled') + '</div>' +
+        '<div class="job-company">' + esc(j.company || 'Unknown') + '</div></div>' +
+        '<span class="status-badge status-' + (j.status || 'new') + '">' + (j.status || 'new') + '</span>' +
+      '</div>' +
+      '<div class="job-meta">' +
+        (j.location ? '<span>' + esc(j.location) + '</span>' : '') +
+        (j.salary ? '<span>' + esc(j.salary) + '</span>' : '') +
+        (j.source ? '<span>via ' + esc(j.source) + '</span>' : '') +
+        (j.dateApplied ? '<span>Applied: ' + new Date(j.dateApplied).toLocaleDateString() + '</span>' : '') +
+      '</div>' +
+      '<div class="checklist">' + checkHtml + '</div>' +
+      followupInfo +
+    '</div>';
+  }).join('');
+}
+
+function renderDashboard() {
+  const content = document.getElementById('dashContent');
+  // Show follow-up alerts and recent activity on dashboard
+  const now = new Date();
+  let html = '';
+
+  // Follow-up alerts
+  const followups = allJobs.filter(j => {
+    if (j.status !== 'applied' || !j.dateApplied || j.followUpSent) return false;
+    return Math.floor((now - new Date(j.dateApplied)) / 86400000) >= (config.followUpDaysMin || 3);
+  });
+
+  if (followups.length > 0) {
+    html += '<h3 style="padding:12px 0 8px;font-size:14px;color:var(--orange);">Follow-Up Reminders</h3>';
+    followups.forEach(j => {
+      const days = Math.floor((now - new Date(j.dateApplied)) / 86400000);
+      const urgent = days >= (config.followUpDaysMax || 7);
+      html += '<div class="job-card ' + (urgent ? 'urgent-reminder' : 'reminder') + '" onclick="openEditModal(\'' + j.id + '\')" style="cursor:pointer;">' +
+        '<div class="job-header"><div><div class="job-title">' + esc(j.title) + '</div><div class="job-company">' + esc(j.company) + '</div></div>' +
+        '<span class="status-badge status-applied">applied</span></div>' +
+        '<div class="followup-alert ' + (urgent ? 'urgent' : '') + '">' + (urgent ? 'URGENT: ' : '') + days + ' days since applied. ' + (urgent ? 'Send follow-up NOW!' : 'Follow-up recommended.') + '</div></div>';
+    });
+  }
+
+  // Recent activity
+  const recent = [...allJobs].sort((a, b) => new Date(b.lastModified || 0) - new Date(a.lastModified || 0)).slice(0, 5);
+  if (recent.length > 0) {
+    html += '<h3 style="padding:16px 0 8px;font-size:14px;color:var(--text2);">Recent Activity</h3>';
+    recent.forEach(j => {
+      html += '<div class="job-card" onclick="openEditModal(\'' + j.id + '\')" style="cursor:pointer;">' +
+        '<div class="job-header"><div><div class="job-title">' + esc(j.title || 'Untitled') + '</div><div class="job-company">' + esc(j.company || '') + '</div></div>' +
+        '<span class="status-badge status-' + (j.status || 'new') + '">' + (j.status || 'new') + '</span></div></div>';
+    });
+  }
+
+  if (!html) {
+    html = '<div class="empty-state"><h3>Welcome to Job Murderer</h3><p>Add your first job or wait for the cron job to populate new leads.</p></div>';
+  }
+
+  content.innerHTML = html;
+}
+
+// ============================================================
+// CHECKBOX TOGGLE (without opening modal)
+// ============================================================
+async function toggleCheck(event, jobId, field) {
+  event.stopPropagation();
+  const job = allJobs.find(j => j.id === jobId);
+  if (!job) return;
+  const updates = {};
+  updates[field] = !job[field];
+
+  // If marking follow-up sent, record the date
+  if (field === 'followUpSent' && !job[field]) {
+    updates.dateFollowUpSent = new Date().toISOString();
+  }
+  // If marking response received, record the date
+  if (field === 'responseReceived' && !job[field]) {
+    updates.dateResponseReceived = new Date().toISOString();
+  }
+
+  await window.api.updateJob(jobId, updates);
+  await refreshData();
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+function openAddModal() {
+  document.getElementById('modalTitle').textContent = 'Add New Job';
+  document.getElementById('editJobId').value = '';
+  document.getElementById('deleteBtn').style.display = 'none';
+  clearForm();
+  document.getElementById('jobModal').classList.add('show');
+}
+
+function openEditModal(id) {
+  const job = allJobs.find(j => j.id === id);
+  if (!job) return;
+  document.getElementById('modalTitle').textContent = 'Edit: ' + (job.title || 'Job');
+  document.getElementById('editJobId').value = id;
+  document.getElementById('deleteBtn').style.display = '';
+
+  document.getElementById('fCompany').value = job.company || '';
+  document.getElementById('fTitle').value = job.title || '';
+  document.getElementById('fStatus').value = job.status || 'new';
+  document.getElementById('fSalary').value = job.salary || '';
+  document.getElementById('fLocation').value = job.location || '';
+  document.getElementById('fSource').value = job.source || '';
+  document.getElementById('fUrl').value = job.url || '';
+  document.getElementById('fDateApplied').value = job.dateApplied ? job.dateApplied.split('T')[0] : '';
+  document.getElementById('fFollowUpDue').value = job.followUpDue || '';
+  document.getElementById('fResumeSubmitted').checked = !!job.resumeSubmitted;
+  document.getElementById('fCoverLetterSubmitted').checked = !!job.coverLetterSubmitted;
+  document.getElementById('fEmailSent').checked = !!job.emailSent;
+  document.getElementById('fWritingSample').checked = !!job.writingSample;
+  document.getElementById('fFollowUpSent').checked = !!job.followUpSent;
+  document.getElementById('fResponseReceived').checked = !!job.responseReceived;
+  document.getElementById('fEmployerDetails').value = job.employerDetails || '';
+  document.getElementById('fNotes').value = job.notes || '';
+  document.getElementById('fResponseNotes').value = job.responseNotes || '';
+
+  document.getElementById('jobModal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('jobModal').classList.remove('show');
+}
+
+function clearForm() {
+  ['fCompany','fTitle','fSalary','fLocation','fSource','fUrl','fDateApplied','fFollowUpDue','fEmployerDetails','fNotes','fResponseNotes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('fStatus').value = 'new';
+  ['fResumeSubmitted','fCoverLetterSubmitted','fEmailSent','fWritingSample','fFollowUpSent','fResponseReceived'].forEach(id => document.getElementById(id).checked = false);
+}
+
+async function saveJob() {
+  const id = document.getElementById('editJobId').value;
+  const data = {
+    company: document.getElementById('fCompany').value,
+    title: document.getElementById('fTitle').value,
+    status: document.getElementById('fStatus').value,
+    salary: document.getElementById('fSalary').value,
+    location: document.getElementById('fLocation').value,
+    source: document.getElementById('fSource').value,
+    url: document.getElementById('fUrl').value,
+    dateApplied: document.getElementById('fDateApplied').value ? new Date(document.getElementById('fDateApplied').value + 'T12:00:00').toISOString() : '',
+    followUpDue: document.getElementById('fFollowUpDue').value,
+    resumeSubmitted: document.getElementById('fResumeSubmitted').checked,
+    coverLetterSubmitted: document.getElementById('fCoverLetterSubmitted').checked,
+    emailSent: document.getElementById('fEmailSent').checked,
+    writingSample: document.getElementById('fWritingSample').checked,
+    followUpSent: document.getElementById('fFollowUpSent').checked,
+    responseReceived: document.getElementById('fResponseReceived').checked,
+    employerDetails: document.getElementById('fEmployerDetails').value,
+    notes: document.getElementById('fNotes').value,
+    responseNotes: document.getElementById('fResponseNotes').value,
+  };
+
+  if (id) {
+    await window.api.updateJob(id, data);
+  } else {
+    await window.api.addJob(data);
+  }
+
+  closeModal();
+  await refreshData();
+}
+
+async function deleteJob() {
+  const id = document.getElementById('editJobId').value;
+  if (!id) return;
+  if (!confirm('Delete this job?')) return;
+  await window.api.deleteJob(id);
+  closeModal();
+  await refreshData();
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+async function renderSettings() {
+  config = await window.api.getConfig();
+  document.getElementById('settingBccEmail').value = config.bccEmail || '';
+  document.getElementById('settingFollowMin').value = config.followUpDaysMin || 3;
+  document.getElementById('settingFollowMax').value = config.followUpDaysMax || 7;
+  const dbPath = await window.api.getDBPath();
+  document.getElementById('settingDbPath').value = dbPath;
+}
+
+async function saveSettings() {
+  const c = {
+    bccEmail: document.getElementById('settingBccEmail').value,
+    followUpDaysMin: parseInt(document.getElementById('settingFollowMin').value) || 3,
+    followUpDaysMax: parseInt(document.getElementById('settingFollowMax').value) || 7,
+    notificationsEnabled: true
+  };
+  await window.api.saveConfig(c);
+  config = c;
+  document.getElementById('bccInfo').textContent = 'BCC: ' + c.bccEmail;
+  alert('Settings saved!');
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// Close modal on overlay click
+document.getElementById('jobModal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('jobModal')) closeModal();
+});
+
+// Keyboard shortcut
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+  if (e.key === 'n' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); openAddModal(); }
+});
+
+// Init
+init();
+</script>
+</body>
+</html>
