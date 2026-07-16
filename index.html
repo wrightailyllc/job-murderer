@@ -333,6 +333,8 @@ async function init() {
   await refreshData();
   setupNav();
 
+  window.api.onDbChanged(() => { refreshData(); });
+
   // Check reminders on load
   const reminders = await window.api.getReminders();
   if (reminders.length > 0) {

@@ -28,6 +28,40 @@ function createWindow() {
 
   mainWindow.loadFile('index.html');
   mainWindow.setMenuBarVisibility(false);
+  watchDB();
+}
+
+// Watch the synced jobs.json so the UI refreshes when Clara (or any
+// external agent) writes to it via the Syncthing folder. Self-writes
+// go through saveDB() which stamps `suppressUntilMtime` to skip the
+// echo. Debounced to coalesce Syncthing's write+rename bursts.
+let dbWatcher = null;
+let dbChangeTimer = null;
+let lastKnownMtime = 0;
+
+function watchDB() {
+  try {
+    lastKnownMtime = fs.statSync(DB_PATH).mtimeMs;
+  } catch { lastKnownMtime = 0; }
+  if (dbWatcher) dbWatcher.close();
+  dbWatcher = fs.watch(DB_PATH, () => {
+    clearTimeout(dbChangeTimer);
+    dbChangeTimer = setTimeout(() => {
+      let mtime;
+      try { mtime = fs.statSync(DB_PATH).mtimeMs; } catch { return; }
+      if (mtime === lastKnownMtime) return;
+      lastKnownMtime = mtime;
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('db:changed');
+      }
+    }, 300);
+  });
+}
+
+function saveDB(data) {
+  db.saveDB(data);
+  try { lastKnownMtime = fs.statSync(DB_PATH).mtimeMs; } catch {}
+  return data;
 }
 
 app.whenReady().then(createWindow);
@@ -46,7 +80,7 @@ ipcMain.handle('db:addJob', (_, job) => {
   const data = db.loadDB();
   const blank = db.blankJob(job);
   data.jobs.push(blank);
-  db.saveDB(data);
+  saveDB(data);
   return blank;
 });
 
@@ -56,7 +90,7 @@ ipcMain.handle('db:updateJob', (_, id, updates) => {
   const idx = data.jobs.findIndex(j => j.id === id);
   if (idx === -1) return null;
   Object.assign(data.jobs[idx], updates, { lastModified: new Date().toISOString() });
-  db.saveDB(data);
+  saveDB(data);
   return data.jobs[idx];
 });
 
@@ -64,7 +98,7 @@ ipcMain.handle('db:updateJob', (_, id, updates) => {
 ipcMain.handle('db:deleteJob', (_, id) => {
   const data = db.loadDB();
   data.jobs = data.jobs.filter(j => j.id !== id);
-  db.saveDB(data);
+  saveDB(data);
   return true;
 });
 
@@ -72,7 +106,7 @@ ipcMain.handle('db:deleteJob', (_, id) => {
 ipcMain.handle('db:setStatus', (_, id, status, extra = {}) => {
   const data = db.loadDB();
   const job = db.setStatus(data, id, status, extra);
-  if (job) db.saveDB(data);
+  if (job) saveDB(data);
   return job;
 });
 
@@ -80,7 +114,7 @@ ipcMain.handle('db:setStatus', (_, id, status, extra = {}) => {
 ipcMain.handle('db:markApplied', (_, id, opts = {}) => {
   const data = db.loadDB();
   const job = db.markApplied(data, id, opts);
-  if (job) db.saveDB(data);
+  if (job) saveDB(data);
   return job;
 });
 
@@ -88,7 +122,7 @@ ipcMain.handle('db:markApplied', (_, id, opts = {}) => {
 ipcMain.handle('db:markResponse', (_, id, notes) => {
   const data = db.loadDB();
   const job = db.markResponse(data, id, notes);
-  if (job) db.saveDB(data);
+  if (job) saveDB(data);
   return job;
 });
 
@@ -96,7 +130,7 @@ ipcMain.handle('db:markResponse', (_, id, notes) => {
 ipcMain.handle('db:markRejected', (_, id, notes) => {
   const data = db.loadDB();
   const job = db.markRejected(data, id, notes);
-  if (job) db.saveDB(data);
+  if (job) saveDB(data);
   return job;
 });
 
@@ -115,7 +149,7 @@ ipcMain.handle('db:importJobs', (_, newJobs) => {
     if (r.action === 'added') added++;
     else if (r.action === 'updated') updated++;
   }
-  db.saveDB(data);
+  saveDB(data);
   return { added, updated, total: data.jobs.length };
 });
 
