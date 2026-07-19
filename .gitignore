@@ -18,6 +18,9 @@ data/
 Job Applications*.csv
 *.zip
 
+# Local project context (documents phone/emails/Studio setup — keep off the public repo)
+CLAUDE.md
+
 # Logs
 *.log
 npm-debug.log*

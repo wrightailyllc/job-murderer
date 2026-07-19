@@ -25,7 +25,10 @@ _STOP = {"llp","llc","inc","pc","pa","pllc","ltd","corp","corporation","co","the
          "consulting","search","staffing","recruitment","global","remote","senior","sr","jr","junior",
          "and","of","for","a","an"}
 def toks(s):
-    return frozenset(t for t in re.sub(r"[^a-z0-9 ]", " ", (s or "").lower()).split() if t and t not in _STOP)
+    raw = {t for t in re.sub(r"[^a-z0-9 ]", " ", (s or "").lower()).split() if t}
+    filtered = {t for t in raw if t not in _STOP}
+    # fall back to raw when stopwords empty it (e.g. "SR Staffing") so all-stopword names still dedup
+    return frozenset(filtered or raw)
 
 def fuzzy_same(a_co, a_ti, b_co, b_ti):
     ca, cb = toks(a_co), toks(b_co)
