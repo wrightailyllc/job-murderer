@@ -30,4 +30,7 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.removeAllListeners('db:changed');
     ipcRenderer.on('db:changed', () => callback());
   },
+
+  // Read a saved source email's plain text for in-app viewing.
+  readEmail: (file) => ipcRenderer.invoke('email:read', file),
 });

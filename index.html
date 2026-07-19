@@ -80,6 +80,12 @@ body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; b
 .status-offered { background: rgba(46,204,113,0.15); color: var(--green); }
 .status-rejected { background: rgba(231,76,60,0.15); color: var(--red); }
 .status-withdrawn { background: rgba(153,153,153,0.15); color: var(--text2); }
+.status-ready { background: rgba(52,152,219,0.15); color: var(--blue); }
+.status-draft { background: rgba(153,153,153,0.15); color: var(--text2); }
+.status-responded { background: rgba(155,89,182,0.15); color: var(--purple); }
+.status-offer { background: rgba(46,204,113,0.15); color: var(--green); }
+.status-archived { background: rgba(153,153,153,0.15); color: var(--text2); }
+.status-closed { background: rgba(153,153,153,0.15); color: var(--text2); }
 
 .checklist { display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
 .check-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
@@ -109,6 +115,18 @@ body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; b
 .modal-footer { padding: 14px 20px; border-top: 1px solid var(--bg3); display: flex; justify-content: space-between; gap: 8px; }
 .modal-footer .btn-group { display: flex; gap: 8px; }
 
+/* Source emails */
+.emails-list { display: flex; flex-direction: column; gap: 8px; }
+.email-item { background: var(--bg3); border: 1px solid var(--bg3); border-left: 3px solid var(--accent); border-radius: 8px; padding: 10px 12px; cursor: pointer; transition: border-color .12s, background .12s; }
+.email-item:hover { background: var(--bg2); border-color: var(--accent); }
+.email-item-head { display: flex; justify-content: space-between; gap: 10px; font-size: 11px; color: var(--text2); margin-bottom: 3px; }
+.email-from { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%; }
+.email-subj { font-weight: 600; font-size: 13px; margin-bottom: 2px; }
+.email-snip { font-size: 12px; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.email-viewer-modal { max-width: 760px; }
+.email-viewer-meta { padding: 8px 20px 0; font-size: 11px; color: var(--text2); font-family: ui-monospace, Menlo, monospace; word-break: break-all; }
+.email-viewer-body { white-space: pre-wrap; word-wrap: break-word; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; line-height: 1.5; color: var(--text); margin: 0; max-height: 60vh; overflow-y: auto; background: var(--bg); padding: 14px; border-radius: 8px; border: 1px solid var(--bg3); }
+
 /* Empty state */
 .empty-state { text-align: center; padding: 60px 20px; color: var(--text2); }
 .empty-state h3 { font-size: 18px; margin-bottom: 8px; color: var(--text); }
@@ -122,6 +140,30 @@ body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; b
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text2); }
+
+/* Sort bar */
+.sort-bar { display: flex; align-items: center; gap: 8px; padding: 0 0 12px; flex-wrap: wrap; }
+.sort-bar > label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.sort-bar select { padding: 7px 10px; background: var(--bg3); border: 1px solid var(--bg4); border-radius: var(--radius); color: var(--text); font-size: 12px; outline: none; cursor: pointer; }
+.sort-bar select:focus { border-color: var(--accent); }
+.sort-dir-btn { padding: 7px 12px; background: var(--bg3); border: 1px solid var(--bg4); border-radius: var(--radius); color: var(--text); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.sort-dir-btn:hover { border-color: var(--accent); }
+.sort-count { margin-left: auto; font-size: 11px; color: var(--text2); }
+
+/* Age badge + date chips on cards */
+.age-badge { font-size: 11px; padding: 2px 9px; border-radius: 10px; font-weight: 600; white-space: nowrap; }
+.age-fresh { background: rgba(46,204,113,0.15); color: var(--green); }
+.age-aging { background: rgba(230,126,34,0.15); color: var(--orange); }
+.age-stale { background: rgba(231,76,60,0.15); color: var(--red); }
+.age-neutral { background: var(--bg4); color: var(--text2); }
+.job-header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+.job-dates { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 2px; }
+.date-chip { font-size: 10.5px; color: var(--text2); background: var(--bg3); padding: 2px 8px; border-radius: 6px; display: inline-flex; gap: 5px; align-items: center; white-space: nowrap; }
+.date-chip b { color: var(--text); font-weight: 600; }
+.date-chip.overdue { background: rgba(231,76,60,0.12); color: var(--red); }
+.date-chip.overdue b { color: var(--red); }
+.date-chip.due-soon { background: rgba(230,126,34,0.12); color: var(--orange); }
+.date-chip.due-soon b { color: var(--orange); }
 </style>
 </head>
 <body>
@@ -133,7 +175,8 @@ body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; b
     <p>Jeffery Wright | Job Tracker</p>
   </div>
   <div class="nav-items">
-    <div class="nav-item active" data-view="dashboard" data-filter="all">All Jobs <span class="count" id="count-all">0</span></div>
+    <div class="nav-item active" data-view="dashboard" data-filter="all">Dashboard</div>
+    <div class="nav-item" data-view="list" data-filter="all">All Jobs <span class="count" id="count-all">0</span></div>
     <div class="nav-item" data-view="list" data-filter="new">New / Recommended <span class="count" id="count-new">0</span></div>
     <div class="nav-item" data-view="list" data-filter="ready">Ready to Apply <span class="count" id="count-ready">0</span></div>
     <div class="nav-item" data-view="list" data-filter="applied">Applied <span class="count" id="count-applied">0</span></div>
@@ -178,6 +221,19 @@ body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; b
   <div id="listView" style="display:none;" class="content">
     <div class="search-bar">
       <input type="text" id="searchInput" placeholder="Search jobs..." oninput="renderJobs()">
+    </div>
+    <div class="sort-bar">
+      <label>Sort by</label>
+      <select id="sortKey" onchange="onSortKeyChange()">
+        <option value="dateAdded">Created (entry) date</option>
+        <option value="foundDate">Found date</option>
+        <option value="postingDate">Lead posting date</option>
+        <option value="dateApplied">Applied date</option>
+        <option value="followUpDue">Follow-up date</option>
+        <option value="age">Age (days since)</option>
+      </select>
+      <button class="sort-dir-btn" id="sortDirBtn" onclick="toggleSortDir()" title="Toggle sort direction">&#8595; Newest first</button>
+      <span class="sort-count" id="sortCount"></span>
     </div>
     <div id="jobList"></div>
   </div>
@@ -235,11 +291,15 @@ body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; b
           <select id="fStatus">
             <option value="new">New / Recommended</option>
             <option value="ready">Ready to Apply</option>
+            <option value="draft">Draft (materials in progress)</option>
             <option value="applied">Applied</option>
+            <option value="responded">Responded / Interviewing</option>
             <option value="interviewing">Interviewing</option>
+            <option value="offer">Offer</option>
             <option value="offered">Offered</option>
             <option value="rejected">Rejected</option>
             <option value="withdrawn">Withdrawn</option>
+            <option value="archived">Archived</option>
             <option value="closed">Closed / Expired</option>
           </select>
         </div>
@@ -263,6 +323,17 @@ body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; b
       <div class="form-group">
         <label>Apply Link / URL</label>
         <input type="url" id="fUrl" placeholder="https://...">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Lead Posting Date</label>
+          <input type="date" id="fPostingDate">
+        </div>
+        <div class="form-group">
+          <label>Found Date</label>
+          <input type="date" id="fFoundDate">
+        </div>
       </div>
 
       <div class="form-row">
@@ -298,6 +369,11 @@ body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; b
         <textarea id="fNotes" placeholder="Application notes, next steps, interview prep..."></textarea>
       </div>
 
+      <div class="form-group" id="sourceEmailsGroup" style="display:none;">
+        <label>Source Emails <span id="sourceEmailsCount" style="color:var(--text2);font-weight:400;"></span></label>
+        <div id="sourceEmailsList" class="emails-list"></div>
+      </div>
+
       <div class="form-group">
         <label>Response Notes</label>
         <textarea id="fResponseNotes" placeholder="What did they say? Interview scheduled? Rejection reason?"></textarea>
@@ -315,6 +391,25 @@ body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; b
   </div>
 </div>
 
+<div class="modal-overlay" id="emailViewer">
+  <div class="modal email-viewer-modal">
+    <div class="modal-header">
+      <h3>Source Email</h3>
+      <button class="modal-close" onclick="closeEmailViewer()">&times;</button>
+    </div>
+    <div class="email-viewer-meta" id="emailViewerSubject"></div>
+    <div class="modal-body">
+      <pre class="email-viewer-body" id="emailViewerBody"></pre>
+    </div>
+    <div class="modal-footer">
+      <div></div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="closeEmailViewer()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ============================================================
 // STATE
@@ -323,6 +418,17 @@ let allJobs = [];
 let currentFilter = 'all';
 let currentView = 'dashboard';
 let config = {};
+let currentSort = { key: 'dateAdded', dir: 'desc' };
+
+// Per-sort-key display metadata + sensible default direction.
+const SORT_META = {
+  dateAdded:   { asc: '↑ Oldest first',   desc: '↓ Newest first',   def: 'desc' },
+  foundDate:   { asc: '↑ Oldest first',   desc: '↓ Newest first',   def: 'desc' },
+  postingDate: { asc: '↑ Oldest first',   desc: '↓ Newest first',   def: 'desc' },
+  dateApplied: { asc: '↑ Oldest first',   desc: '↓ Newest first',   def: 'desc' },
+  followUpDue: { asc: '↑ Soonest first',  desc: '↓ Latest first',   def: 'asc'  },
+  age:         { asc: '↑ Youngest first', desc: '↓ Oldest first',   def: 'desc' },
+};
 
 // ============================================================
 // INIT
@@ -332,6 +438,7 @@ async function init() {
   document.getElementById('bccInfo').textContent = 'BCC: ' + (config.bccEmail || 'not set');
   await refreshData();
   setupNav();
+  updateSortDirLabel();
 
   window.api.onDbChanged(() => { refreshData(); });
 
@@ -436,6 +543,77 @@ function updateCounts() {
 }
 
 // ============================================================
+// DATES & SORTING
+// ============================================================
+function daysSince(dateStr) {
+  if (!dateStr) return null;
+  const t = new Date(dateStr).getTime();
+  if (isNaN(t)) return null;
+  return Math.floor((Date.now() - t) / 86400000);
+}
+function fmtDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return isNaN(d) ? '' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' });
+}
+// Found date falls back to the entry-created date for older records that predate the field.
+function effectiveFound(job) { return job.foundDate || job.dateAdded || ''; }
+
+// Numeric value for the active sort key; null means "missing" (always sorts last).
+function sortValue(job, key) {
+  if (key === 'age') {
+    const d = daysSince(effectiveFound(job));
+    return d == null ? null : d;
+  }
+  const raw = key === 'foundDate' ? effectiveFound(job) : job[key];
+  if (!raw) return null;
+  const t = new Date(raw).getTime();
+  return isNaN(t) ? null : t;
+}
+function compareJobs(a, b) {
+  const va = sortValue(a, currentSort.key);
+  const vb = sortValue(b, currentSort.key);
+  if (va == null && vb == null) return 0;
+  if (va == null) return 1;   // missing dates sink to the bottom regardless of direction
+  if (vb == null) return -1;
+  const cmp = va - vb;
+  return currentSort.dir === 'asc' ? cmp : -cmp;
+}
+
+// Contextual "how old is this" for the card badge — reference date depends on state.
+function ageInfo(job) {
+  const st = job.status;
+  let refDate, label;
+  if (st === 'applied' && job.dateApplied) { refDate = job.dateApplied; label = 'since applied'; }
+  else if (['new', 'ready', 'draft'].includes(st)) { refDate = effectiveFound(job); label = 'to apply'; }
+  else if (['responded', 'interviewing', 'offer', 'offered'].includes(st)) { refDate = job.lastModified || job.dateAdded; label = 'since update'; }
+  else { refDate = job.dateAdded; label = 'old'; }
+  const days = daysSince(refDate);
+  if (days == null) return null;
+  let tone = 'neutral';
+  if (['new', 'ready', 'draft', 'applied'].includes(st)) {
+    tone = days <= 7 ? 'fresh' : (days <= 21 ? 'aging' : 'stale');
+  }
+  return { days, label, tone };
+}
+
+function onSortKeyChange() {
+  currentSort.key = document.getElementById('sortKey').value;
+  currentSort.dir = SORT_META[currentSort.key].def;
+  updateSortDirLabel();
+  renderJobs();
+}
+function toggleSortDir() {
+  currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+  updateSortDirLabel();
+  renderJobs();
+}
+function updateSortDirLabel() {
+  const btn = document.getElementById('sortDirBtn');
+  if (btn) btn.textContent = SORT_META[currentSort.key][currentSort.dir];
+}
+
+// ============================================================
 // RENDER JOBS
 // ============================================================
 function getFilteredJobs() {
@@ -466,12 +644,8 @@ function getFilteredJobs() {
     );
   }
 
-  // Sort: follow-ups first (by urgency), then by dateAdded desc
-  filtered.sort((a, b) => {
-    const aDate = new Date(a.dateAdded || 0);
-    const bDate = new Date(b.dateAdded || 0);
-    return bDate - aDate;
-  });
+  // Sort by the user-selected key + direction (missing values sink to the bottom).
+  filtered = filtered.slice().sort(compareJobs);
 
   return filtered;
 }
@@ -515,22 +689,43 @@ function renderJobs() {
       return '<label class="' + cls + '"><input type="checkbox" ' + checked + ' onclick="toggleCheck(event, \'' + j.id + '\', \'' + c.key + '\')">' + c.label + '</label>';
     }).join('');
 
+    // Age badge (contextual staleness) + date chips
+    const age = ageInfo(j);
+    const ageBadge = age ? '<span class="age-badge age-' + age.tone + '">' + age.days + 'd ' + age.label + '</span>' : '';
+
+    const chips = [];
+    if (j.postingDate) chips.push('<span class="date-chip">Posted <b>' + fmtDate(j.postingDate) + '</b></span>');
+    if (j.foundDate) chips.push('<span class="date-chip">Found <b>' + fmtDate(j.foundDate) + '</b></span>');
+    if (j.dateApplied) chips.push('<span class="date-chip">Applied <b>' + fmtDate(j.dateApplied) + '</b></span>');
+    if (j.followUpDue) {
+      const fu = daysSince(j.followUpDue);
+      const fcls = (fu != null && fu > 0) ? ' overdue' : ((fu != null && fu >= -2) ? ' due-soon' : '');
+      chips.push('<span class="date-chip' + fcls + '">Follow-up <b>' + fmtDate(j.followUpDue) + '</b></span>');
+    }
+    chips.push('<span class="date-chip">Created <b>' + fmtDate(j.dateAdded) + '</b></span>');
+
     return '<div class="' + cardClass + '" onclick="openEditModal(\'' + j.id + '\')">' +
       '<div class="job-header">' +
         '<div><div class="job-title">' + esc(j.title || 'Untitled') + '</div>' +
         '<div class="job-company">' + esc(j.company || 'Unknown') + '</div></div>' +
-        '<span class="status-badge status-' + (j.status || 'new') + '">' + (j.status || 'new') + '</span>' +
+        '<div class="job-header-right">' +
+          '<span class="status-badge status-' + (j.status || 'new') + '">' + (j.status || 'new') + '</span>' +
+          ageBadge +
+        '</div>' +
       '</div>' +
       '<div class="job-meta">' +
         (j.location ? '<span>' + esc(j.location) + '</span>' : '') +
         (j.salary ? '<span>' + esc(j.salary) + '</span>' : '') +
         (j.source ? '<span>via ' + esc(j.source) + '</span>' : '') +
-        (j.dateApplied ? '<span>Applied: ' + new Date(j.dateApplied).toLocaleDateString() + '</span>' : '') +
       '</div>' +
+      '<div class="job-dates">' + chips.join('') + '</div>' +
       '<div class="checklist">' + checkHtml + '</div>' +
       followupInfo +
     '</div>';
   }).join('');
+
+  const sc = document.getElementById('sortCount');
+  if (sc) sc.textContent = jobs.length + (jobs.length === 1 ? ' job' : ' jobs');
 }
 
 function renderDashboard() {
@@ -623,6 +818,8 @@ function openEditModal(id) {
   document.getElementById('fLocation').value = job.location || '';
   document.getElementById('fSource').value = job.source || '';
   document.getElementById('fUrl').value = job.url || '';
+  document.getElementById('fPostingDate').value = job.postingDate ? job.postingDate.split('T')[0] : '';
+  document.getElementById('fFoundDate').value = job.foundDate ? job.foundDate.split('T')[0] : '';
   document.getElementById('fDateApplied').value = job.dateApplied ? job.dateApplied.split('T')[0] : '';
   document.getElementById('fFollowUpDue').value = job.followUpDue || '';
   document.getElementById('fResumeSubmitted').checked = !!job.resumeSubmitted;
@@ -635,7 +832,55 @@ function openEditModal(id) {
   document.getElementById('fNotes').value = job.notes || '';
   document.getElementById('fResponseNotes').value = job.responseNotes || '';
 
+  renderSourceEmails(job);
+
   document.getElementById('jobModal').classList.add('show');
+}
+
+function renderSourceEmails(job) {
+  const group = document.getElementById('sourceEmailsGroup');
+  const listEl = document.getElementById('sourceEmailsList');
+  const countEl = document.getElementById('sourceEmailsCount');
+  const emails = (job.sourceEmails || []).slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  listEl.textContent = '';
+  if (emails.length === 0) { group.style.display = 'none'; return; }
+  group.style.display = '';
+  countEl.textContent = '(' + emails.length + ')';
+  // Build with safe DOM methods — email fields come from external senders.
+  emails.forEach((e) => {
+    const item = document.createElement('div');
+    item.className = 'email-item';
+    item.addEventListener('click', () => viewEmail(e.file));
+    const head = document.createElement('div');
+    head.className = 'email-item-head';
+    const dt = document.createElement('span');
+    dt.className = 'email-date';
+    dt.textContent = e.date ? new Date(e.date).toLocaleDateString() : '';
+    const fr = document.createElement('span');
+    fr.className = 'email-from';
+    fr.textContent = e.from || '';
+    head.append(dt, fr);
+    const subj = document.createElement('div');
+    subj.className = 'email-subj';
+    subj.textContent = e.subject || '(no subject)';
+    const snip = document.createElement('div');
+    snip.className = 'email-snip';
+    snip.textContent = e.snippet || '';
+    item.append(head, subj, snip);
+    listEl.appendChild(item);
+  });
+}
+
+async function viewEmail(file) {
+  const content = await window.api.readEmail(file);
+  document.getElementById('emailViewerBody').textContent =
+    content == null ? 'Could not load this email (the file may still be syncing to this machine).' : content;
+  document.getElementById('emailViewerSubject').textContent = file;
+  document.getElementById('emailViewer').classList.add('show');
+}
+
+function closeEmailViewer() {
+  document.getElementById('emailViewer').classList.remove('show');
 }
 
 function closeModal() {
@@ -643,7 +888,7 @@ function closeModal() {
 }
 
 function clearForm() {
-  ['fCompany','fTitle','fSalary','fLocation','fSource','fUrl','fDateApplied','fFollowUpDue','fEmployerDetails','fNotes','fResponseNotes'].forEach(id => document.getElementById(id).value = '');
+  ['fCompany','fTitle','fSalary','fLocation','fSource','fUrl','fPostingDate','fFoundDate','fDateApplied','fFollowUpDue','fEmployerDetails','fNotes','fResponseNotes'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('fStatus').value = 'new';
   ['fResumeSubmitted','fCoverLetterSubmitted','fEmailSent','fWritingSample','fFollowUpSent','fResponseReceived'].forEach(id => document.getElementById(id).checked = false);
 }
@@ -658,6 +903,8 @@ async function saveJob() {
     location: document.getElementById('fLocation').value,
     source: document.getElementById('fSource').value,
     url: document.getElementById('fUrl').value,
+    postingDate: document.getElementById('fPostingDate').value ? new Date(document.getElementById('fPostingDate').value + 'T12:00:00').toISOString() : '',
+    foundDate: document.getElementById('fFoundDate').value ? new Date(document.getElementById('fFoundDate').value + 'T12:00:00').toISOString() : '',
     dateApplied: document.getElementById('fDateApplied').value ? new Date(document.getElementById('fDateApplied').value + 'T12:00:00').toISOString() : '',
     followUpDue: document.getElementById('fFollowUpDue').value,
     resumeSubmitted: document.getElementById('fResumeSubmitted').checked,

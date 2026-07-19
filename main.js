@@ -188,3 +188,18 @@ ipcMain.handle('notify', (_, title, body) => {
     new Notification({ title, body }).show();
   }
 });
+
+// Read a saved source email (plain text) from the synced data/emails/ dir.
+// Restricted to that directory — only a basename is honored.
+const EMAILS_DIR = path.join(path.dirname(DB_PATH), 'emails');
+ipcMain.handle('email:read', (_, file) => {
+  if (!file) return null;
+  const safe = path.basename(String(file));
+  const full = path.join(EMAILS_DIR, safe);
+  if (path.dirname(full) !== EMAILS_DIR) return null;
+  try {
+    return fs.readFileSync(full, 'utf8');
+  } catch {
+    return null;
+  }
+});
