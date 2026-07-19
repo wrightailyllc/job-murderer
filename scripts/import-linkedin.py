@@ -66,7 +66,8 @@ def parse_date(s):
     s = (s or "").strip()
     if not s:
         return ""
-    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%b %d, %Y", "%d %b %Y"):
+    for fmt in ("%m/%d/%y, %I:%M %p", "%m/%d/%Y, %I:%M %p", "%Y-%m-%d %H:%M:%S",
+                "%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%b %d, %Y", "%d %b %Y"):
         try:
             return dt.datetime.strptime(s, fmt).strftime("%Y-%m-%d") + "T12:00:00.000Z"
         except ValueError:
@@ -78,6 +79,7 @@ def main():
     ap.add_argument("csv", help="Path to LinkedIn 'Job Applications.csv'")
     ap.add_argument("--data", default=str(DEFAULT_DATA))
     ap.add_argument("--commit", action="store_true")
+    ap.add_argument("--since", default="", help="Only import applications on/after this date (YYYY-MM-DD)")
     a = ap.parse_args()
 
     csv_path = Path(os.path.expanduser(a.csv))
@@ -101,7 +103,7 @@ def main():
 
     d = json.loads(data_path.read_text())
     existing = d["jobs"]
-    added, skipped_dup, skipped_seen = 0, 0, 0
+    added, skipped_dup, skipped_seen, skipped_old = 0, 0, 0, 0
     seen = set()
     new_jobs = []
     for r in rows:
@@ -109,13 +111,15 @@ def main():
         ti = (r.get(c_ti) or "").strip() if c_ti else ""
         if not co:
             continue
+        applied = parse_date(r.get(c_dt)) if c_dt else ""
+        if a.since and applied and applied[:10] < a.since:
+            skipped_old += 1; continue
         key = (frozenset(toks(co)), frozenset(toks(ti)))
         if key in seen:
             skipped_seen += 1; continue
         seen.add(key)
         if any(fuzzy_same(e.get("company",""), e.get("title",""), co, ti) for e in existing):
             skipped_dup += 1; continue
-        applied = parse_date(r.get(c_dt)) if c_dt else ""
         j = blank_job(company=co, title=ti, status="applied", source="linkedin-export",
                       url=(r.get(c_url) or "").strip() if c_url else "",
                       dateApplied=applied, foundDate=applied, responseReceived=False)
@@ -123,7 +127,12 @@ def main():
         new_jobs.append(j)
         added += 1
 
-    print(f"rows: {len(rows)} | already tracked (skipped): {skipped_dup} | in-file dups: {skipped_seen}")
+    print(f"rows: {len(rows)} | already tracked: {skipped_dup} | in-file dups: {skipped_seen}" +
+          (f" | before --since: {skipped_old}" if a.since else ""))
+    if new_jobs:
+        import collections
+        yr = collections.Counter((j["dateApplied"][:4] or "?") for j in new_jobs)
+        print("NEW by year: " + ", ".join(f"{y}:{n}" for y, n in sorted(yr.items())))
     print(f"NEW to add: {added}")
     for j in new_jobs[:15]:
         print(f"  + {j['company']} — {j['title']}  ({j['dateApplied'][:10] or 'no date'})")
