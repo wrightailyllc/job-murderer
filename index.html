@@ -254,6 +254,10 @@ body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; b
           <label>Follow-Up Max Days</label>
           <input type="number" id="settingFollowMax" min="1" max="30">
         </div>
+        <div class="form-group">
+          <label>Stop Follow-Up After (days)</label>
+          <input type="number" id="settingFollowStale" min="7" max="180">
+        </div>
       </div>
       <div class="form-group">
         <label>Database Path (for cron job integration)</label>
@@ -515,11 +519,8 @@ function updateCounts() {
     if (j.status === 'rejected' || j.status === 'withdrawn' || j.status === 'closed') counts.rejected++;
     if (j.responseReceived) counts.responded++;
 
-    // Follow-up check
-    if (j.status === 'applied' && j.dateApplied && !j.followUpSent) {
-      const days = Math.floor((now - new Date(j.dateApplied)) / 86400000);
-      if (days >= (config.followUpDaysMin || 3)) counts.followup++;
-    }
+    // Follow-up check (windowed — not yet stale)
+    if (isFollowUpDue(j)) counts.followup++;
   });
 
   document.getElementById('count-all').textContent = counts.all;
@@ -580,6 +581,15 @@ function compareJobs(a, b) {
   return currentSort.dir === 'asc' ? cmp : -cmp;
 }
 
+// Follow-up is "due" only inside a useful window: after the min wait, and before
+// it goes stale (chasing a weeks-silent application is pointless — it shows as
+// stale via the age badge instead). followUpStaleAfter is configurable.
+function isFollowUpDue(j) {
+  if (j.status !== 'applied' || !j.dateApplied || j.followUpSent) return false;
+  const days = daysSince(j.dateApplied);
+  return days != null && days >= (config.followUpDaysMin || 3) && days <= (config.followUpStaleAfter || 14);
+}
+
 // Contextual "how old is this" for the card badge — reference date depends on state.
 function ageInfo(job) {
   const st = job.status;
@@ -622,11 +632,7 @@ function getFilteredJobs() {
   let filtered = allJobs;
 
   if (currentFilter === 'followup') {
-    filtered = filtered.filter(j => {
-      if (j.status !== 'applied' || !j.dateApplied || j.followUpSent) return false;
-      const days = Math.floor((now - new Date(j.dateApplied)) / 86400000);
-      return days >= (config.followUpDaysMin || 3);
-    });
+    filtered = filtered.filter(isFollowUpDue);
   } else if (currentFilter === 'responded') {
     filtered = filtered.filter(j => j.responseReceived);
   } else if (currentFilter === 'rejected') {
@@ -663,12 +669,12 @@ function renderJobs() {
   list.innerHTML = jobs.map(j => {
     let followupInfo = '';
     let cardClass = 'job-card';
-    if (j.status === 'applied' && j.dateApplied && !j.followUpSent) {
-      const days = Math.floor((now - new Date(j.dateApplied)) / 86400000);
+    if (isFollowUpDue(j)) {
+      const days = daysSince(j.dateApplied);
       if (days >= (config.followUpDaysMax || 7)) {
         cardClass += ' urgent-reminder';
         followupInfo = '<div class="followup-alert urgent">URGENT: ' + days + ' days since applied. Send follow-up NOW!</div>';
-      } else if (days >= (config.followUpDaysMin || 3)) {
+      } else {
         cardClass += ' reminder';
         followupInfo = '<div class="followup-alert">' + days + ' days since applied. Follow-up recommended.</div>';
       }
@@ -735,10 +741,7 @@ function renderDashboard() {
   let html = '';
 
   // Follow-up alerts
-  const followups = allJobs.filter(j => {
-    if (j.status !== 'applied' || !j.dateApplied || j.followUpSent) return false;
-    return Math.floor((now - new Date(j.dateApplied)) / 86400000) >= (config.followUpDaysMin || 3);
-  });
+  const followups = allJobs.filter(isFollowUpDue);
 
   if (followups.length > 0) {
     html += '<h3 style="padding:12px 0 8px;font-size:14px;color:var(--orange);">Follow-Up Reminders</h3>';
@@ -945,6 +948,7 @@ async function renderSettings() {
   document.getElementById('settingBccEmail').value = config.bccEmail || '';
   document.getElementById('settingFollowMin').value = config.followUpDaysMin || 3;
   document.getElementById('settingFollowMax').value = config.followUpDaysMax || 7;
+  document.getElementById('settingFollowStale').value = config.followUpStaleAfter || 14;
   const dbPath = await window.api.getDBPath();
   document.getElementById('settingDbPath').value = dbPath;
 }
@@ -954,6 +958,7 @@ async function saveSettings() {
     bccEmail: document.getElementById('settingBccEmail').value,
     followUpDaysMin: parseInt(document.getElementById('settingFollowMin').value) || 3,
     followUpDaysMax: parseInt(document.getElementById('settingFollowMax').value) || 7,
+    followUpStaleAfter: parseInt(document.getElementById('settingFollowStale').value) || 30,
     notificationsEnabled: true
   };
   await window.api.saveConfig(c);
