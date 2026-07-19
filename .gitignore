@@ -12,6 +12,12 @@ node_modules/
 # Personal data (not for public repo)
 data/
 
+# LinkedIn / other data exports (contain messages, contacts, PII — never commit)
+*LinkedInDataExport*
+*DataExport*
+Job Applications*.csv
+*.zip
+
 # Logs
 *.log
 npm-debug.log*
