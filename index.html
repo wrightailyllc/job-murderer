@@ -259,6 +259,16 @@ body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; b
           <input type="number" id="settingFollowStale" min="7" max="180">
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Age Badge: Fresh Until (days)</label>
+          <input type="number" id="settingAgeFresh" min="1" max="60">
+        </div>
+        <div class="form-group">
+          <label>Age Badge: Stale After (days)</label>
+          <input type="number" id="settingAgeStale" min="2" max="180">
+        </div>
+      </div>
       <div class="form-group">
         <label>Database Path (for cron job integration)</label>
         <input type="text" id="settingDbPath" readonly style="opacity:0.6;">
@@ -602,7 +612,9 @@ function ageInfo(job) {
   if (days == null) return null;
   let tone = 'neutral';
   if (['new', 'ready', 'draft', 'applied'].includes(st)) {
-    tone = days <= 7 ? 'fresh' : (days <= 21 ? 'aging' : 'stale');
+    const fresh = config.ageFreshDays || 7;
+    const stale = config.ageStaleDays || 21;
+    tone = days <= fresh ? 'fresh' : (days <= stale ? 'aging' : 'stale');
   }
   return { days, label, tone };
 }
@@ -949,6 +961,8 @@ async function renderSettings() {
   document.getElementById('settingFollowMin').value = config.followUpDaysMin || 3;
   document.getElementById('settingFollowMax').value = config.followUpDaysMax || 7;
   document.getElementById('settingFollowStale').value = config.followUpStaleAfter || 14;
+  document.getElementById('settingAgeFresh').value = config.ageFreshDays || 7;
+  document.getElementById('settingAgeStale').value = config.ageStaleDays || 21;
   const dbPath = await window.api.getDBPath();
   document.getElementById('settingDbPath').value = dbPath;
 }
@@ -958,7 +972,9 @@ async function saveSettings() {
     bccEmail: document.getElementById('settingBccEmail').value,
     followUpDaysMin: parseInt(document.getElementById('settingFollowMin').value) || 3,
     followUpDaysMax: parseInt(document.getElementById('settingFollowMax').value) || 7,
-    followUpStaleAfter: parseInt(document.getElementById('settingFollowStale').value) || 30,
+    followUpStaleAfter: parseInt(document.getElementById('settingFollowStale').value) || 14,
+    ageFreshDays: parseInt(document.getElementById('settingAgeFresh').value) || 7,
+    ageStaleDays: parseInt(document.getElementById('settingAgeStale').value) || 21,
     notificationsEnabled: true
   };
   await window.api.saveConfig(c);
