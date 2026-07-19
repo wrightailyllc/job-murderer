@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "job-murderer",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["start"],
+      "comment": "Electron desktop app (electron .) — opens a native window, no HTTP port"
+    },
+    {
+      "name": "job-murderer-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "comment": "Electron with --dev flag — native window, no HTTP port"
+    }
+  ]
+}
