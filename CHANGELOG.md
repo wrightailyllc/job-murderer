@@ -3,6 +3,14 @@
 All notable changes to Job Murderer. Personal data, credentials, and machine-specific
 operational details are intentionally omitted (see the local CLAUDE.md).
 
+## 2026-07-23
+
+### Added
+- **In-app scanner-detections banner**: the email autopilot's detections (rejections, interviews,
+  offers) now surface as a dismissable banner in the app — not just via iMessage. Each entry is
+  color-coded by type, flags "pending approval", links to the job, and refreshes as detections sync
+  in. "Mark all read" clears it. Reads the `data/notifications.json` queue the scanner already writes.
+
 ## 2026-07-19
 
 ### Added

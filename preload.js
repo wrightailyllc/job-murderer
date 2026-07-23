@@ -24,6 +24,10 @@ contextBridge.exposeInMainWorld('api', {
   // Notifications
   notify: (title, body) => ipcRenderer.invoke('notify', title, body),
 
+  // Scanner detections queue (in-app banner)
+  getNotifications: () => ipcRenderer.invoke('notifications:get'),
+  markNotificationsRead: () => ipcRenderer.invoke('notifications:markRead'),
+
   // External writes (e.g. Clara on Studio syncing jobs.json via Syncthing).
   // Fires whenever the DB file changes on disk from something other than the app itself.
   onDbChanged: (callback) => {
