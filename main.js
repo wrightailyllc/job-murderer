@@ -189,6 +189,23 @@ ipcMain.handle('notify', (_, title, body) => {
   }
 });
 
+// Scanner detections queue (written by the Studio autopilot, synced via Syncthing).
+// The app surfaces unread ones as an in-app banner.
+const NOTIF_PATH = path.join(path.dirname(DB_PATH), 'notifications.json');
+ipcMain.handle('notifications:get', () => {
+  try { return JSON.parse(fs.readFileSync(NOTIF_PATH, 'utf8')); } catch { return []; }
+});
+ipcMain.handle('notifications:markRead', () => {
+  try {
+    const q = JSON.parse(fs.readFileSync(NOTIF_PATH, 'utf8'));
+    q.forEach(e => { e.read = true; });
+    const tmp = NOTIF_PATH + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(q, null, 2));
+    fs.renameSync(tmp, NOTIF_PATH);
+    return true;
+  } catch { return false; }
+});
+
 // Read a saved source email (plain text) from the synced data/emails/ dir.
 // Restricted to that directory — only a basename is honored.
 const EMAILS_DIR = path.join(path.dirname(DB_PATH), 'emails');

@@ -164,6 +164,25 @@ body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; b
 .date-chip.overdue b { color: var(--red); }
 .date-chip.due-soon { background: rgba(230,126,34,0.12); color: var(--orange); }
 .date-chip.due-soon b { color: var(--orange); }
+
+/* Scanner detections banner */
+.notif-banner { margin: 12px 24px 0; background: var(--bg2); border: 1px solid var(--purple); border-left: 4px solid var(--purple); border-radius: var(--radius); padding: 12px 14px; }
+.notif-banner-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.notif-banner-head .title { font-size: 13px; font-weight: 700; color: var(--accent2); }
+.notif-banner-head .sub { font-size: 11px; color: var(--text2); }
+.notif-banner-head .actions { margin-left: auto; display: flex; gap: 6px; }
+.notif-list { display: flex; flex-direction: column; gap: 6px; }
+.notif-item { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 6px 8px; background: var(--bg3); border-radius: 6px; cursor: pointer; }
+.notif-item:hover { background: var(--bg4); }
+.notif-item .ntype { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 8px; white-space: nowrap; }
+.ntype-rejection { background: rgba(231,76,60,0.15); color: var(--red); }
+.ntype-interview_invite { background: rgba(155,89,182,0.15); color: var(--purple); }
+.ntype-offer { background: rgba(46,204,113,0.15); color: var(--green); }
+.ntype-assessment_request { background: rgba(52,152,219,0.15); color: var(--blue); }
+.ntype-further_info_request { background: rgba(241,196,15,0.15); color: var(--yellow); }
+.notif-item .nlabel { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.notif-item .ntime { color: var(--text2); font-size: 11px; white-space: nowrap; }
+.notif-item .npending { color: var(--orange); font-size: 10.5px; font-weight: 600; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -202,6 +221,9 @@ body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; b
       <button class="btn btn-primary" onclick="openAddModal()">+ Add Job</button>
     </div>
   </div>
+
+  <!-- Scanner detections banner -->
+  <div id="notifBanner" class="notif-banner" style="display:none;"></div>
 
   <!-- Dashboard -->
   <div id="dashboardView">
@@ -453,8 +475,10 @@ async function init() {
   await refreshData();
   setupNav();
   updateSortDirLabel();
+  await loadNotifications();
+  setInterval(loadNotifications, 60000);  // scanner detections sync in via Syncthing
 
-  window.api.onDbChanged(() => { refreshData(); });
+  window.api.onDbChanged(() => { refreshData(); loadNotifications(); });
 
   // Check reminders on load
   const reminders = await window.api.getReminders();
@@ -472,6 +496,43 @@ async function refreshData() {
   document.getElementById('lastUpdate').textContent = 'Last sync: ' + new Date(db.lastUpdated).toLocaleString();
   updateCounts();
   render();
+}
+
+// ============================================================
+// SCANNER DETECTIONS BANNER
+// ============================================================
+async function loadNotifications() {
+  const all = (await window.api.getNotifications()) || [];
+  const unread = all.filter(n => !n.read);
+  const banner = document.getElementById('notifBanner');
+  if (unread.length === 0) { banner.style.display = 'none'; banner.innerHTML = ''; return; }
+
+  const pending = unread.filter(n => n.pending).length;
+  const items = unread.slice().sort((a, b) => (b.ts || '').localeCompare(a.ts || '')).map(n => {
+    const t = n.ts ? new Date(n.ts) : null;
+    const when = t ? t.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + t.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : '';
+    const typ = (n.type || '').replace(/_/g, ' ');
+    return '<div class="notif-item" onclick="openEditModal(\'' + (n.job_id || '') + '\')">' +
+      '<span class="ntype ntype-' + esc(n.type || '') + '">' + esc(typ) + '</span>' +
+      '<span class="nlabel">' + esc(n.label || n.job_id || 'job') + '</span>' +
+      (n.pending ? '<span class="npending">pending approval</span>' : '') +
+      '<span class="ntime">' + esc(when) + '</span>' +
+    '</div>';
+  }).join('');
+
+  banner.innerHTML =
+    '<div class="notif-banner-head">' +
+      '<span class="title">📨 ' + unread.length + ' scanner detection' + (unread.length === 1 ? '' : 's') + '</span>' +
+      (pending ? '<span class="sub">' + pending + ' pending your approval (approve via Clara or jm-pending)</span>' : '') +
+      '<span class="actions"><button class="btn btn-secondary btn-small" onclick="dismissNotifications()">Mark all read</button></span>' +
+    '</div>' +
+    '<div class="notif-list">' + items + '</div>';
+  banner.style.display = '';
+}
+
+async function dismissNotifications() {
+  await window.api.markNotificationsRead();
+  await loadNotifications();
 }
 
 // ============================================================
